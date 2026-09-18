@@ -1,0 +1,8 @@
+{
+  "name": "Meetr",
+  "description": "AI Career, European Higher Education & Mobility Platform. Connect career ambitions with accredited degree programmes across EU countries grounded in verified open-source European education datasets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
