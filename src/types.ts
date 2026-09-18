@@ -131,9 +131,21 @@ export interface ProgramItem {
   verificationStatus: VerificationStatus;
 }
 
+export interface AuthUserState {
+  name: string;
+  email: string;
+  preferredCountry: string;
+  isLoggedIn: boolean;
+  onboardingCompleted: boolean;
+  avatarUrl?: string;
+  createdAt?: string;
+}
+
 export interface UserProfileState {
   id?: string;
   name?: string;
+  email?: string;
+  preferredCountry?: string;
   educationLevel: 'High School / Grade XII' | 'Undergraduate / Bachelor' | 'Graduate / Master' | 'Self-Taught';
   highSchoolPercentage: number;
   englishProficiency: string; // e.g. "IELTS 6.5"

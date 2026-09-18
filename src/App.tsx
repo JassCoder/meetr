@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Header, ActiveTab } from './components/Header';
+import { SideNavBar } from './components/SideNavBar';
+import { WelcomeOnboarding } from './components/WelcomeOnboarding';
 import { AIAssistantView } from './components/AIAssistantView';
 import { CareerDiscoveryView } from './components/CareerDiscoveryView';
 import { EducationProgramsView } from './components/EducationProgramsView';
@@ -8,25 +10,42 @@ import { EligibilityAndFundingView } from './components/EligibilityAndFundingVie
 import { MobilityIntelligenceView } from './components/MobilityIntelligenceView';
 import { SavedPathwayView } from './components/SavedPathwayView';
 import { ProfileModal } from './components/ProfileModal';
-import { UserProfileState, ProgramItem, CareerItem } from './types';
+import { UserProfileState, AuthUserState, ProgramItem, CareerItem } from './types';
 import { CAREERS_DATA } from './data/careersData';
 
 const INITIAL_PROFILE: UserProfileState = {
   id: 'student-profile-1',
-  name: 'Prospective International Student',
+  name: 'Jaspreet Saini',
+  email: 'sainijaspreet1999@gmail.com',
+  preferredCountry: 'Germany',
   educationLevel: 'High School / Grade XII',
-  highSchoolPercentage: 78,
-  annualBudgetEur: 4200,
-  targetCareerId: 'gameplay-programmer',
-  preferredCity: 'Warsaw',
+  highSchoolPercentage: 82,
+  annualBudgetEur: 5000,
+  targetCareerId: 'software-engineer',
+  preferredCity: 'Munich',
   passportOrigin: 'Non-EU',
-  englishProficiency: 'B2 / IELTS 6.5',
+  englishProficiency: 'IELTS 7.0',
   skillsOwned: ['cpp', 'python', 'git'],
-  savedPrograms: ['pw-cs-inż', 'pjatk-gamedev-it'],
+  savedPrograms: ['tum-info-eng-bsc', 'pw-cs-inż'],
 };
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('advisor');
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Authentication & Onboarding State
+  const [authUser, setAuthUser] = useState<AuthUserState | null>(() => {
+    const saved = localStorage.getItem('meetr_auth_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
   const [profile, setProfile] = useState<UserProfileState>(() => {
     const saved = localStorage.getItem('meetr_student_profile') || localStorage.getItem('pathway_student_profile');
     if (saved) {
@@ -45,15 +64,15 @@ export function App() {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        return ['pw-cs-inż', 'tum-info-eng-bsc'];
+        return ['tum-info-eng-bsc', 'pw-cs-inż'];
       }
     }
-    return ['pw-cs-inż', 'tum-info-eng-bsc'];
+    return ['tum-info-eng-bsc', 'pw-cs-inż'];
   });
 
   const [comparedProgramIds, setComparedProgramIds] = useState<string[]>([
-    'pw-cs-inż',
     'tum-info-eng-bsc',
+    'pw-cs-inż',
   ]);
 
   const [careerFilterForPrograms, setCareerFilterForPrograms] = useState<string | null>(null);
@@ -75,7 +94,30 @@ export function App() {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
-    }, 3000);
+    }, 3200);
+  };
+
+  const handleCompleteAuth = (user: AuthUserState) => {
+    setAuthUser(user);
+    setProfile((prev) => ({
+      ...prev,
+      name: user.name,
+      email: user.email,
+      preferredCountry: user.preferredCountry,
+    }));
+    showToast(`Welcome to Meetr, ${user.name}! Your European pathway dashboard is ready.`);
+  };
+
+  const handleLogOut = () => {
+    if (authUser) {
+      const loggedOutUser = { ...authUser, isLoggedIn: false };
+      setAuthUser(loggedOutUser);
+      localStorage.setItem('meetr_auth_user', JSON.stringify(loggedOutUser));
+    } else {
+      setAuthUser(null);
+      localStorage.removeItem('meetr_auth_user');
+    }
+    showToast('Logged out of Meetr. You can complete the questionnaire or log in anytime.');
   };
 
   const handleUpdateProfile = (updates: Partial<UserProfileState>) => {
@@ -83,6 +125,21 @@ export function App() {
       ...prev,
       ...updates,
     }));
+
+    if (updates.name || updates.email || updates.preferredCountry) {
+      setAuthUser((prev) => {
+        if (!prev) return null;
+        const updated = {
+          ...prev,
+          name: updates.name || prev.name,
+          email: updates.email || prev.email,
+          preferredCountry: updates.preferredCountry || prev.preferredCountry,
+        };
+        localStorage.setItem('meetr_auth_user', JSON.stringify(updated));
+        return updated;
+      });
+    }
+
     showToast('Student profile updated & matches recalculated');
   };
 
@@ -135,8 +192,27 @@ export function App() {
     setActiveTab('careers');
   };
 
+  // If user is not logged in / first visit questionnaire
+  if (!authUser || !authUser.isLoggedIn) {
+    return (
+      <>
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-slate-700 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-blue-400" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+        <WelcomeOnboarding
+          onCompleteAuth={handleCompleteAuth}
+          initialUser={authUser}
+        />
+      </>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
+    <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans selection:bg-blue-500 selection:text-white">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-slate-700 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
@@ -145,90 +221,131 @@ export function App() {
         </div>
       )}
 
-      {/* Main Navigation Header */}
-      <Header
+      {/* Side Navigation Bar (Requested) */}
+      <SideNavBar
         activeTab={activeTab}
         setActiveTab={(tab) => {
           if (tab === 'programs') setCareerFilterForPrograms(null);
           setActiveTab(tab);
         }}
         profile={profile}
+        authUser={authUser}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onLogOut={handleLogOut}
         savedProgramsCount={savedProgramIds.length}
+        isOpenMobile={isMobileNavOpen}
+        onCloseMobile={() => setIsMobileNavOpen(false)}
+        onSelectCountry={(country) => {
+          handleUpdateProfile({ preferredCountry: country });
+          showToast(`Focused study destination updated to ${country}`);
+        }}
       />
 
-      {/* Main Tab Content */}
-      <main className="flex-1 pb-16">
-        {activeTab === 'advisor' && (
-          <AIAssistantView
-            profile={profile}
-            onUpdateProfile={handleUpdateProfile}
-            onSelectCareer={handleSelectCareerFromChat}
-            onSelectProgram={handleSelectProgramFromChat}
-            onOpenProfileModal={() => setIsProfileModalOpen(true)}
-          />
-        )}
+      {/* Main Content Area beside Side Nav */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+        {/* Companion Top Bar */}
+        <Header
+          activeTab={activeTab}
+          setActiveTab={(tab) => {
+            if (tab === 'programs') setCareerFilterForPrograms(null);
+            setActiveTab(tab);
+          }}
+          profile={profile}
+          authUser={authUser}
+          onOpenProfileModal={() => setIsProfileModalOpen(true)}
+          onToggleMobileNav={() => setIsMobileNavOpen((prev) => !prev)}
+          onLogOut={handleLogOut}
+          savedProgramsCount={savedProgramIds.length}
+        />
 
-        {activeTab === 'careers' && (
-          <CareerDiscoveryView
-            profile={profile}
-            onSetTargetCareer={handleSetTargetCareer}
-            onViewMatchingPrograms={handleViewMatchingProgramsForCareer}
-            selectedCareerModal={selectedCareerModal}
-            setSelectedCareerModal={setSelectedCareerModal}
-          />
-        )}
+        {/* Main Tab Content */}
+        <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto pb-16">
+          {activeTab === 'advisor' && (
+            <AIAssistantView
+              profile={profile}
+              onUpdateProfile={handleUpdateProfile}
+              onSelectCareer={handleSelectCareerFromChat}
+              onSelectProgram={handleSelectProgramFromChat}
+              onOpenProfileModal={() => setIsProfileModalOpen(true)}
+            />
+          )}
 
-        {activeTab === 'programs' && (
-          <EducationProgramsView
-            profile={profile}
-            savedProgramIds={savedProgramIds}
-            onToggleSaveProgram={handleToggleSaveProgram}
-            comparedProgramIds={comparedProgramIds}
-            onToggleCompareProgram={handleToggleCompareProgram}
-            onNavigateToCompare={() => setActiveTab('compare')}
-            onNavigateToFunding={handleNavigateToFunding}
-            filterByCareerId={careerFilterForPrograms}
-          />
-        )}
+          {activeTab === 'careers' && (
+            <CareerDiscoveryView
+              profile={profile}
+              onSetTargetCareer={handleSetTargetCareer}
+              onViewMatchingPrograms={handleViewMatchingProgramsForCareer}
+              selectedCareerModal={selectedCareerModal}
+              setSelectedCareerModal={setSelectedCareerModal}
+            />
+          )}
 
-        {activeTab === 'compare' && (
-          <ProgramComparisonView
-            profile={profile}
-            comparedProgramIds={comparedProgramIds}
-            onToggleCompareProgram={handleToggleCompareProgram}
-            onClearCompare={() => setComparedProgramIds([])}
-            onNavigateToPrograms={() => setActiveTab('programs')}
-            onNavigateToFunding={handleNavigateToFunding}
-          />
-        )}
+          {activeTab === 'programs' && (
+            <EducationProgramsView
+              profile={profile}
+              savedProgramIds={savedProgramIds}
+              onToggleSaveProgram={handleToggleSaveProgram}
+              comparedProgramIds={comparedProgramIds}
+              onToggleCompareProgram={handleToggleCompareProgram}
+              onNavigateToCompare={() => setActiveTab('compare')}
+              onNavigateToFunding={handleNavigateToFunding}
+              filterByCareerId={careerFilterForPrograms}
+            />
+          )}
 
-        {activeTab === 'funding' && (
-          <EligibilityAndFundingView
-            profile={profile}
-            onUpdateProfile={handleUpdateProfile}
-            preselectedProgramId={fundingProgramId}
-          />
-        )}
+          {activeTab === 'compare' && (
+            <ProgramComparisonView
+              profile={profile}
+              comparedProgramIds={comparedProgramIds}
+              onToggleCompareProgram={handleToggleCompareProgram}
+              onClearCompare={() => setComparedProgramIds([])}
+              onNavigateToPrograms={() => setActiveTab('programs')}
+              onNavigateToFunding={handleNavigateToFunding}
+            />
+          )}
 
-        {activeTab === 'mobility' && (
-          <MobilityIntelligenceView profile={profile} />
-        )}
+          {activeTab === 'funding' && (
+            <EligibilityAndFundingView
+              profile={profile}
+              onUpdateProfile={handleUpdateProfile}
+              preselectedProgramId={fundingProgramId}
+            />
+          )}
 
-        {activeTab === 'saved' && (
-          <SavedPathwayView
-            profile={profile}
-            savedProgramIds={savedProgramIds}
-            onToggleSaveProgram={handleToggleSaveProgram}
-            onNavigateToPrograms={() => setActiveTab('programs')}
-            onNavigateToCareers={() => setActiveTab('careers')}
-            onSelectProgram={(prog) => {
-              setFundingProgramId(prog.id);
-              setActiveTab('programs');
-            }}
-          />
-        )}
-      </main>
+          {activeTab === 'mobility' && (
+            <MobilityIntelligenceView profile={profile} />
+          )}
+
+          {activeTab === 'saved' && (
+            <SavedPathwayView
+              profile={profile}
+              savedProgramIds={savedProgramIds}
+              onToggleSaveProgram={handleToggleSaveProgram}
+              onNavigateToPrograms={() => setActiveTab('programs')}
+              onNavigateToCareers={() => setActiveTab('careers')}
+              onSelectProgram={(prog) => {
+                setFundingProgramId(prog.id);
+                setActiveTab('programs');
+              }}
+            />
+          )}
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-xs text-slate-500">
+          <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white tracking-wider">MEETR</span>
+              <span>• European Higher Education & Career Mobility Intelligence v0.1.0</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-[11px]">
+              <span>Data grounded in European Open Tertiary Education Datasets (ETER & National Open Registers)</span>
+              <span>•</span>
+              <span>EU Directive 2016/801 & Bologna Framework</span>
+            </div>
+          </div>
+        </footer>
+      </div>
 
       {/* Profile Tune Modal */}
       <ProfileModal
@@ -237,21 +354,6 @@ export function App() {
         profile={profile}
         onSave={handleUpdateProfile}
       />
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-xs text-slate-500">
-        <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-white tracking-wider">MEETR</span>
-            <span>• European Higher Education & Career Mobility Intelligence v0.1.0</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-4 text-[11px]">
-            <span>Data grounded in European Open Tertiary Education Datasets (ETER & National Open Registers)</span>
-            <span>•</span>
-            <span>EU Directive 2016/801 & Bologna Framework</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
