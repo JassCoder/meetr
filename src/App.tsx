@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Header, ActiveTab } from './components/Header';
 import { SideNavBar } from './components/SideNavBar';
 import { WelcomeOnboarding } from './components/WelcomeOnboarding';
-import { AIAssistantView } from './components/AIAssistantView';
 import { CareerDiscoveryView } from './components/CareerDiscoveryView';
 import { EducationProgramsView } from './components/EducationProgramsView';
 import { ProgramComparisonView } from './components/ProgramComparisonView';
@@ -10,7 +9,7 @@ import { EligibilityAndFundingView } from './components/EligibilityAndFundingVie
 import { MobilityIntelligenceView } from './components/MobilityIntelligenceView';
 import { SavedPathwayView } from './components/SavedPathwayView';
 import { ProfileModal } from './components/ProfileModal';
-import { UserProfileState, AuthUserState, ProgramItem, CareerItem } from './types';
+import { UserProfileState, AuthUserState, CareerItem } from './types';
 import { CAREERS_DATA } from './data/careersData';
 
 const INITIAL_PROFILE: UserProfileState = {
@@ -21,7 +20,7 @@ const INITIAL_PROFILE: UserProfileState = {
   educationLevel: 'High School / Grade XII',
   highSchoolPercentage: 82,
   annualBudgetEur: 5000,
-  targetCareerId: 'software-engineer',
+  targetCareerId: null, // Default to open exploration / no goal
   preferredCity: 'Munich',
   passportOrigin: 'Non-EU',
   englishProficiency: 'IELTS 7.0',
@@ -30,7 +29,7 @@ const INITIAL_PROFILE: UserProfileState = {
 };
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('advisor');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('programs');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Authentication & Onboarding State
@@ -167,9 +166,19 @@ export function App() {
   };
 
   const handleSetTargetCareer = (careerId: string) => {
+    if (!careerId) {
+      handleUpdateProfile({ targetCareerId: null });
+      showToast('Target goal cleared: Now exploring all European opportunities');
+      return;
+    }
     handleUpdateProfile({ targetCareerId: careerId });
     const career = CAREERS_DATA.find((c) => c.id === careerId);
     showToast(`Target goal set to ${career ? career.title : careerId}`);
+  };
+
+  const handleClearTargetGoal = () => {
+    handleUpdateProfile({ targetCareerId: null });
+    showToast('Target goal cleared: Open exploration active');
   };
 
   const handleViewMatchingProgramsForCareer = (careerId: string) => {
@@ -180,16 +189,6 @@ export function App() {
   const handleNavigateToFunding = (programId: string) => {
     setFundingProgramId(programId);
     setActiveTab('funding');
-  };
-
-  const handleSelectProgramFromChat = (prog: ProgramItem) => {
-    setFundingProgramId(prog.id);
-    setActiveTab('programs');
-  };
-
-  const handleSelectCareerFromChat = (career: CareerItem) => {
-    setSelectedCareerModal(career);
-    setActiveTab('careers');
   };
 
   // If user is not logged in / first visit questionnaire
@@ -212,11 +211,11 @@ export function App() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans selection:bg-blue-500 selection:text-white">
+    <div className="flex h-screen overflow-hidden bg-[#F5F2EB] text-[#121212] font-sans selection:bg-[#FFE600] selection:text-black">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-slate-700 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-blue-400" />
+        <div className="fixed bottom-5 right-5 z-50 rounded-xl border-2 border-black bg-[#FFE600] px-4 py-3 text-xs font-black text-black shadow-[4px_4px_0px_0px_#000] animate-fade-in flex items-center gap-2.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-black animate-ping" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -232,6 +231,7 @@ export function App() {
         authUser={authUser}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onLogOut={handleLogOut}
+        onClearGoal={handleClearTargetGoal}
         savedProgramsCount={savedProgramIds.length}
         isOpenMobile={isMobileNavOpen}
         onCloseMobile={() => setIsMobileNavOpen(false)}
@@ -260,26 +260,6 @@ export function App() {
 
         {/* Main Tab Content */}
         <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto pb-16">
-          {activeTab === 'advisor' && (
-            <AIAssistantView
-              profile={profile}
-              onUpdateProfile={handleUpdateProfile}
-              onSelectCareer={handleSelectCareerFromChat}
-              onSelectProgram={handleSelectProgramFromChat}
-              onOpenProfileModal={() => setIsProfileModalOpen(true)}
-            />
-          )}
-
-          {activeTab === 'careers' && (
-            <CareerDiscoveryView
-              profile={profile}
-              onSetTargetCareer={handleSetTargetCareer}
-              onViewMatchingPrograms={handleViewMatchingProgramsForCareer}
-              selectedCareerModal={selectedCareerModal}
-              setSelectedCareerModal={setSelectedCareerModal}
-            />
-          )}
-
           {activeTab === 'programs' && (
             <EducationProgramsView
               profile={profile}
@@ -290,6 +270,17 @@ export function App() {
               onNavigateToCompare={() => setActiveTab('compare')}
               onNavigateToFunding={handleNavigateToFunding}
               filterByCareerId={careerFilterForPrograms}
+              onClearGoal={handleClearTargetGoal}
+            />
+          )}
+
+          {activeTab === 'careers' && (
+            <CareerDiscoveryView
+              profile={profile}
+              onSetTargetCareer={handleSetTargetCareer}
+              onViewMatchingPrograms={handleViewMatchingProgramsForCareer}
+              selectedCareerModal={selectedCareerModal}
+              setSelectedCareerModal={setSelectedCareerModal}
             />
           )}
 
@@ -332,16 +323,16 @@ export function App() {
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-xs text-slate-500">
+        <footer className="border-t-2 border-black bg-[#FAF7F0] py-6 text-xs text-zinc-800 font-bold">
           <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white tracking-wider">MEETR</span>
-              <span>• European Higher Education & Career Mobility Intelligence v0.1.0</span>
+              <span className="font-black text-black tracking-wider font-display text-sm bg-[#FFE600] px-2 py-0.5 border border-black shadow-[1.5px_1.5px_0px_0px_#000] rounded">MEETR</span>
+              <span>• European Higher Education & Career Mobility Intelligence</span>
             </div>
-            <div className="flex flex-wrap items-center gap-4 text-[11px]">
-              <span>Data grounded in European Open Tertiary Education Datasets (ETER & National Open Registers)</span>
+            <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold text-zinc-700">
+              <span>Data grounded in European Tertiary Education Register (ETER & National Open Registers)</span>
               <span>•</span>
-              <span>EU Directive 2016/801 & Bologna Framework</span>
+              <span className="bg-[#A7F3D0] text-black px-1.5 py-0.5 rounded border border-black">EU Directive 2016/801 & Bologna Framework</span>
             </div>
           </div>
         </footer>

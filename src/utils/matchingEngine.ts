@@ -9,7 +9,7 @@ export function calculateProgramMatch(
   const warnings: string[] = [];
 
   // 1. Career Relevance (Max 30)
-  let careerRelevanceScore = 20; // Default baseline
+  let careerRelevanceScore = 26; // Default baseline
   if (profile.targetCareerId && program.careerRelevanceScore[profile.targetCareerId]) {
     const rawRelevance = program.careerRelevanceScore[profile.targetCareerId];
     careerRelevanceScore = Math.round((rawRelevance / 100) * 30);
@@ -19,12 +19,16 @@ export function calculateProgramMatch(
     } else {
       reasons.push(`Moderate career relevance (${careerRelevanceScore}/30) for ${targetCareer?.title}`);
     }
+  } else if (!profile.targetCareerId) {
+    careerRelevanceScore = 26;
+    reasons.push(`Open exploration mode active: evaluated without career bias (${careerRelevanceScore}/30)`);
   } else {
-    reasons.push(`General technology foundation score: ${careerRelevanceScore}/30`);
+    careerRelevanceScore = 18;
+    reasons.push(`General academic foundation score: ${careerRelevanceScore}/30`);
   }
 
   // 2. Skill Coverage (Max 20)
-  let skillCoverageScore = 14;
+  let skillCoverageScore = 16;
   if (profile.targetCareerId) {
     const targetCareer = CAREERS_DATA.find((c) => c.id === profile.targetCareerId);
     if (targetCareer) {
@@ -37,6 +41,9 @@ export function calculateProgramMatch(
         `Covers ${matched.length}/${requiredSkills.length} essential core skills (${skillCoverageScore}/20)`
       );
     }
+  } else {
+    skillCoverageScore = 17;
+    reasons.push(`Comprehensive curriculum covering European Bologna ECTS competencies (${skillCoverageScore}/20)`);
   }
 
   // 3. Budget Fit (Max 15)

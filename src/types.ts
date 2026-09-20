@@ -1,7 +1,7 @@
 // MEETR — Data Types and Interfaces
 
-export type DegreeLevel = 'Bachelor' | 'Engineering (Inżynier)' | 'Master' | 'Integrated Master';
-export type StudyLanguage = 'English' | 'Polish' | 'German' | 'Dutch' | 'French' | 'Swedish' | 'Bilingual';
+export type DegreeLevel = 'Bachelor' | 'Engineering (Inżynier)' | 'Master' | 'Integrated Master' | 'Erasmus Mundus' | 'Doctorate';
+export type StudyLanguage = 'English' | 'Polish' | 'German' | 'Dutch' | 'French' | 'Swedish' | 'Spanish' | 'Italian' | 'Bilingual';
 export type DemandLevel = 'Very High' | 'High' | 'Moderate';
 export type VerificationStatus = 
   | 'VERIFIED_EU_OPEN_REGISTER' 
@@ -34,7 +34,7 @@ export interface EducationRoute {
 export interface CareerItem {
   id: string;
   title: string;
-  category: 'Software & Systems' | 'Gaming & Graphics' | 'Data & AI' | 'Cybersecurity' | 'Product & Strategy' | 'Engineering & Healthcare';
+  category: 'Software & Systems' | 'Gaming & Graphics' | 'Data & AI' | 'Cybersecurity' | 'Product & Strategy' | 'Engineering & Healthcare' | 'Arts & Design' | 'Architecture & Media';
   description: string;
   summaryQuote: string;
   requiredSkills: { skillId: string; name: string; importance: 'Critical' | 'High' | 'Medium' }[];
@@ -54,7 +54,7 @@ export interface CareerItem {
 export interface SkillItem {
   id: string;
   name: string;
-  category: 'Core Programming' | 'Game Tech' | 'Systems & Security' | 'Data & AI' | 'Math & Foundations' | 'Product & Process';
+  category: 'Core Programming' | 'Game Tech' | 'Systems & Security' | 'Data & AI' | 'Math & Foundations' | 'Product & Process' | 'Arts, Design & Creative Tech';
   description: string;
   relatedCareers: string[];
   learningResources: { title: string; type: 'Free Course' | 'Documentation' | 'Book' | 'Interactive'; url: string }[];
